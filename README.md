@@ -5,8 +5,8 @@ Junit tests for Java programs that use MPI calls. Simply add this project as a
 dependency and annotate your test class with the following: 
 
 ```java
-@RunWith(MpiRunner.class) 	// Use the MpiRunner to run the test
-@MpiConfig(ranks=4)			// Specify how many ranks you want your test to run with
+@RunWith(MpiRunner.class)   // Use the MpiRunner to run the test
+@MpiConfig(ranks=4)	        // Specify how many ranks you want your test to run with
 public class MyTestClass {
 	@Test
 	public void testMultipleHosts() {
