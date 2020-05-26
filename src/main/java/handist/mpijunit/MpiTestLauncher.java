@@ -20,47 +20,56 @@ import mpi.MPI;
  */
 final public class MpiTestLauncher {
 
-  /** Identifier of this place */
-  static int commRank;
-  /** Number of places in the system */
-  static int commSize;
+	/** Identifier of this place */
+	static int commRank;
+	/** Number of places in the system */
+	static int commSize;
 
 
-  /**
-   * Main method of MpiTestLauncher
-   * <p>
-   * Sets up the MPI environment by calling Init, Rank, and Size. Initializes a 
-   * file in which the result of the Junit tests are going to be written. 
-   * Runs the tests of the class provided using the {@link BlockJUnit4ClassRunner}.
-   * 
-   * @param  args Fully qualified name of the test class whose tests need to be 
-   * 	run, second argument: the directory under which the test results file should 
-   * be written (optional)
-   * 
-   * @throws Exception if an MPI exception occurs
-   */
-  public static void main(String[] args) throws Exception {
-    MPI.Init(args);
-    commRank = MPI.COMM_WORLD.Rank();
-    commSize = MPI.COMM_WORLD.Size();
-      
-    // Obtain the class to test as an argument
-    Class<?> testClass = Class.forName(args[0]);
-    BlockJUnit4ClassRunner junitDefaultRunner = new BlockJUnit4ClassRunner(testClass);
-    String notificationFileName = testClass.getCanonicalName() + "_" + 
-    		  commRank;
-    
-    String directory = null;
-    if (args.length > 1) {
-    	directory = args[1];
-    }
-    File f = new File(directory, notificationFileName);
-      
-    ToFileRunNotifier notifier = new ToFileRunNotifier(f);
-    junitDefaultRunner.run(notifier);
-    notifier.close();    
-    
-    MPI.Finalize();
-    System.exit(0);
-  }
+	/**
+	 * Main method of MpiTestLauncher
+	 * <p>
+	 * Sets up the MPI environment by calling Init, Rank, and Size. Initializes a 
+	 * file in which the result of the Junit tests are going to be written. 
+	 * Runs the tests of the class provided using the {@link BlockJUnit4ClassRunner}.
+	 * 
+	 * @param  args Fully qualified name of the test class whose tests need to be 
+	 * 	run, second argument: the directory under which the test results file should 
+	 * be written (optional)
+	 * 
+	 * @throws Exception if an MPI exception occurs
+	 */
+	public static void main(String[] args) throws Exception {
+		MPI.Init(args);
+		commRank = MPI.COMM_WORLD.Rank();
+		commSize = MPI.COMM_WORLD.Size();
+
+		// Discard the 3 arguments of the MPJ runtime if necessary
+		if (args.length > 2) {
+			String [] newArgs = new String[args.length -3];
+			for (int i = 3, j = 0; i < args.length; i++, j++) {
+				newArgs[j] = args[i];
+			}
+			args = newArgs;
+		}
+
+		// Obtain the class to test as an argument
+		Class<?> testClass = Class.forName(args[0]);
+		BlockJUnit4ClassRunner junitDefaultRunner = new BlockJUnit4ClassRunner(testClass);
+		String notificationFileName = testClass.getCanonicalName() + "_" + 
+				commRank;
+
+		String directory = null;
+		if (args.length > 1) {
+			directory = args[1];
+		}
+		File f = new File(directory, notificationFileName);
+
+		ToFileRunNotifier notifier = new ToFileRunNotifier(f);
+		junitDefaultRunner.run(notifier);
+		notifier.close();    
+
+		MPI.Finalize();
+		System.exit(0);
+	}
 }

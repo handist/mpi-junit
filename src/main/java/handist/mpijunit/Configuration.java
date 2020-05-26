@@ -63,6 +63,56 @@ public class Configuration {
 	public static final String JAVA_LIBRARY_PATH = "mpirunner.javaLibraryPath";
 			
 	/**
+	 * Command line option to define the MPI implementation used to launch the 
+	 * mpi tests. This can be used to run a script rather than the "mpirun" 
+	 * command. Set this setting with <em>-Dmpirunner.mpiImpl=implementation</em>.
+	 * <p>
+	 * Current supported implementations are:
+	 * <ul>
+	 * <li>{@value #MPI_IMPL_NATIVE}
+	 * <li>{@value #MPI_IMPL_MPJMULTICORE}
+	 * </ul>
+	 * In the {@link #MPI_IMPL_NATIVE} implementation, the <em>mpirun</em> command will be used. 
+	 * You can set the options of that command by setting the {@value #MPIRUN_OPTION}
+	 * variable. 
+	 * <p>
+	 * In the
+	 */
+	public static final String MPI_IMPL = "mpirunner.mpiImpl";
+	
+	/** 
+	 * Possible option for the MPI implementation used to launch the tests. 
+	 * When using the <em>native</em> implementation, be careful of the fact you
+	 * will need to provide the path to the shared objects bindings to the MPI
+	 * library you are using. You can do this by setting option 
+	 * {@link #JAVA_LIBRARY_PATH}. You can also give additional arguments to the
+	 * <em>mpirun</em> command by setting {@link #MPIRUN_OPTION}.  
+	 */ 
+	public static final String MPI_IMPL_NATIVE = "native";
+	/** 
+	 * Possible option for the MPI implementation used to launch the tests.
+	 * <p>
+	 * When using the MPJ multicore configuration, you will need to set 
+	 * <em>MPJ_HOME</em> as an environment variable as this is needed by the MPJ
+	 * library to run correctly. We refer you to 
+	 * <a href="http://mpj-express.org/">the MPJ Express website</a> for
+	 * downloads and documentation.   
+	 */
+	public static final String MPI_IMPL_MPJMULTICORE = "mpj-multicore";
+	
+	/** Default setting for {@link #MPI_IMPL} : {@value #MPI_IMPL_DEFAULT} */
+	public static final String MPI_IMPL_DEFAULT = MPI_IMPL_MPJMULTICORE;
+	
+	/**
+	 * Settings to give options to the <em>mpirun</em> command when a 
+	 * <em>native</em> MPI implementation id used. Is not set by default (by 
+	 * default, no options are passed to the <em>mpirun</em> command except 
+	 * <em>-np X</em> where X is the number of processes requested by your test 
+	 * class). 
+	 */
+	public static final String MPIRUN_OPTION = "mpirunner.mpirunOptions";
+	
+	/**
 	 * Option to specify the directory in which the notifications of each mpi 
 	 * process will be placed. Set it using <em>-Dmpirunner.notificationsPath=direcotryToNotifications</em>.
 	 * If the directory does not exist, it will be created. However, note that

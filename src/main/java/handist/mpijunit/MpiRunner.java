@@ -129,26 +129,66 @@ public class MpiRunner extends Runner {
 	 */
 	private void launchMpiProcess()	throws Exception {
 		final ArrayList<String> command = new ArrayList<>();
-		command.add("mpirun");
-		command.add("-np");
-		command.add(String.valueOf(processCount));
-        command.add("java");
-	    command.add("-Duser.dir=" + System.getProperty("user.dir"));
-	    String javaLibraryPath = System.getProperty(Configuration.JAVA_LIBRARY_PATH);
-	    if (javaLibraryPath != null) {
-	    	command.add("-Djava.library.path="+ javaLibraryPath);
-	    }
-	    command.add("-cp");
-        command.add(System.getProperty("java.class.path"));
 		
+		String mpiImplementation = System.getProperty(Configuration.MPI_IMPL, 
+				Configuration.MPI_IMPL_DEFAULT);
+		// Depending on the implementation, build a different command
+		switch (mpiImplementation) {
+		case Configuration.MPI_IMPL_NATIVE:
+			command.add("mpirun");
+			String mpirunOptions = System.getProperty(Configuration.MPIRUN_OPTION);
+			if (mpirunOptions!=null) {
+				command.add(mpirunOptions);
+			}
+			command.add("-np");
+			command.add(String.valueOf(processCount));
+			command.add("java");
+		    command.add("-Duser.dir=" + System.getProperty("user.dir"));
+		    String javaLibraryPath = System.getProperty(Configuration.JAVA_LIBRARY_PATH);
+		    if (javaLibraryPath != null) {
+		    	command.add("-Djava.library.path="+ javaLibraryPath);
+		    }
+		    command.add("-cp");
+	        command.add(System.getProperty("java.class.path"));
+			break;
+		case Configuration.MPI_IMPL_MPJMULTICORE:
+			command.add("java");
+	        
+		    command.add("-Duser.dir=" + System.getProperty("user.dir"));
+		    command.add("-jar");
+		    
+		    // Assemble the path to starter.jar of the MPJ library
+		    String mpjHome = System.getenv("MPJ_HOME");
+		    if (mpjHome == null) {
+		    	throw new Exception("MPJ_HOME was not set. Cannot run the tests");
+		    }
+		    String sep = File.separator;
+		    if (!mpjHome.endsWith(sep)) {
+		    	mpjHome += sep;
+		    }
+		    String pathToStarterJar = mpjHome + "lib" + sep + "starter.jar";
+		    command.add(pathToStarterJar);
+		    
+		    command.add("-cp");
+	        command.add(System.getProperty("java.class.path"));
+	        command.add("-np");
+	      	command.add(String.valueOf(processCount));
+			break;
+		default:
+			throw new Exception("Unknown MPI implementation <" + 
+					mpiImplementation + ">");
+		}
+        // Common to all configurations are the two last parameters
+        // Three parameters with the optional path to the notification files
         command.add(launcherClass);
         command.add(testClass.getCanonicalName());
-        
         pathToNotifications = System.getProperty(Configuration.NOTIFICATIONS_PATH);
         if (pathToNotifications != null) {
         	new File(pathToNotifications).mkdirs();
         	command.add(pathToNotifications);
         }
+        
+        //System.out.println(String.join(" ", command));
         
 		ProcessBuilder pb = new ProcessBuilder(command);
 		pb.redirectOutput(Redirect.INHERIT);
