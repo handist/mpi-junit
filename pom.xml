@@ -27,14 +27,15 @@
 	</dependency>
 	<dependency>
 		<groupId>com.github.handist</groupId>
-		<artifactId>mpijava</artifactId>
-		<version>v1.2.7</version>
+		<artifactId>MPJ</artifactId>
+		<version>v1</version>
 		<scope>provided</scope>
+		<optional>true</optional>
 	</dependency>
 	<dependency>
 		<groupId>com.github.handist</groupId> <!-- Corresponds to github.com/handist/apgas repository -->
 		<artifactId>apgas</artifactId>
-		<version>v1-mpijava</version>
+		<version>v1</version>
 		<scope>provided</scope>
 	</dependency>
   </dependencies>
