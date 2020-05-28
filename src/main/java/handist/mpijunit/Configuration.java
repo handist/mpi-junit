@@ -75,10 +75,8 @@ public class Configuration {
 	 * In the {@link #MPI_IMPL_NATIVE} implementation, the <em>mpirun</em> command will be used. 
 	 * You can set the options of that command by setting the {@value #MPIRUN_OPTION}
 	 * variable. 
-	 * <p>
-	 * In the
 	 */
-	public static final String MPI_IMPL = "mpirunner.mpirunCmd";
+	public static final String MPI_IMPL = "mpirunner.mpiImpl";
 	
 	/** 
 	 * Possible option for the MPI implementation used to launch the tests. 
