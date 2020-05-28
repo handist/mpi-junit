@@ -8,6 +8,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -147,8 +148,8 @@ public class MpiRunner extends Runner {
 			// Transmit the potential java agents
 			for ( String s :ManagementFactory.getRuntimeMXBean().getInputArguments() ) {
 				if (s.startsWith("-javaagent")) {
+					s = s.replace("\\\\", "\\");
 					command.add(s);
-					System.err.println(s);
 				}	
 			}
 			command.add("-Duser.dir=" + System.getProperty("user.dir"));
@@ -164,8 +165,8 @@ public class MpiRunner extends Runner {
 			// Transmit the potential java agents
 			for ( String s :ManagementFactory.getRuntimeMXBean().getInputArguments() ) {
 				if (s.startsWith("-javaagent")) {
+					s = s.replace("\\\\", "\\");
 					command.add(s);
-					System.err.println(s);
 				}	
 			}
 			command.add("-Duser.dir=" + System.getProperty("user.dir"));
@@ -202,7 +203,7 @@ public class MpiRunner extends Runner {
 			command.add(pathToNotifications);
 		}
 
-		System.out.println(String.join(" ", command));
+		//System.out.println(String.join(" ", command));
 
 		ProcessBuilder pb = new ProcessBuilder(command);
 		pb.redirectOutput(Redirect.INHERIT);
