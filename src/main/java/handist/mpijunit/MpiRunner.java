@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.lang.ProcessBuilder.Redirect;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,19 +34,19 @@ import org.junit.runners.model.InitializationError;
  *
  */
 public class MpiRunner extends Runner {
-	
+
 	/** Class used as the main class for the child MPI processes */
 	String launcherClass;
-	
+
 	/** Directory path to the notification */
 	String pathToNotifications;
-	
+
 	/** Number of processes to run */
 	int processCount;
-	
+
 	/** Class under test */
 	Class<?> testClass;
-	
+
 	/**
 	 * Constructor with the class to test provided as parameter
 	 * @param klass the class to test
@@ -64,7 +65,7 @@ public class MpiRunner extends Runner {
 					" is missing a @Config annotation.");
 		}
 	}
-	
+
 	/**
 	 * Creates a tree description of the tests to run. As per normal Junit 
 	 * tests, a branch is created for each test method in the test class. 
@@ -76,22 +77,22 @@ public class MpiRunner extends Runner {
 	@Override
 	public Description getDescription() {
 		Description toReturn = Description.createSuiteDescription(testClass);
-		
+
 		for (Method m : testClass.getMethods()) {
 			if (m.isAnnotationPresent(Test.class)) {
 				Description methodDescription = Description.createTestDescription(testClass, m.getName());
 				for (int i = 0; i < processCount; i++) {
 					Description leafDescription = Description.createTestDescription(testClass, "[" + i + "] " + m.getName()); 
 					methodDescription.addChild(leafDescription);
-					
+
 				}
 				toReturn.addChild(methodDescription);
 			}
 		}
-		
+
 		return toReturn;
 	}
-	
+
 	/**
 	 * Attempts to open the file that should have been created by the 
 	 * {@link ToFileRunNotifier} of the specified rank. 
@@ -103,11 +104,11 @@ public class MpiRunner extends Runner {
 	 */
 	@SuppressWarnings("unchecked")
 	private ArrayList<Notification> getNotifications(int rank)
-	throws Exception {
+			throws Exception {
 		String notificationFileName = testClass.getCanonicalName() + "_" + 
 				rank;
 		File toOpen = new File(pathToNotifications, notificationFileName);
-		
+
 		boolean keepFile = Boolean.parseBoolean(System.getProperty(
 				Configuration.KEEP_NOTIFICATIONS, 
 				Configuration.KEEP_NOTIFICATIONS_DEFAULT));
@@ -120,7 +121,7 @@ public class MpiRunner extends Runner {
 		inStream.close();
 		return (ArrayList<Notification>) o;
 	}
-	
+
 	/**
 	 * Builds the command and launches a <em>mpirun</em> process that will run
 	 * the test class on multiple mpi processes.
@@ -129,7 +130,7 @@ public class MpiRunner extends Runner {
 	 */
 	private void launchMpiProcess()	throws Exception {
 		final ArrayList<String> command = new ArrayList<>();
-		
+
 		String mpiImplementation = System.getProperty(Configuration.MPI_IMPL, 
 				Configuration.MPI_IMPL_DEFAULT);
 		// Depending on the implementation, build a different command
@@ -143,57 +144,70 @@ public class MpiRunner extends Runner {
 			command.add("-np");
 			command.add(String.valueOf(processCount));
 			command.add("java");
-		    command.add("-Duser.dir=" + System.getProperty("user.dir"));
-		    String javaLibraryPath = System.getProperty(Configuration.JAVA_LIBRARY_PATH);
-		    if (javaLibraryPath != null) {
-		    	command.add("-Djava.library.path="+ javaLibraryPath);
-		    }
-		    command.add("-cp");
-	        command.add(System.getProperty("java.class.path"));
+			// Transmit the potential java agents
+			for ( String s :ManagementFactory.getRuntimeMXBean().getInputArguments() ) {
+				if (s.startsWith("-javaagent")) {
+					command.add(s);
+					System.err.println(s);
+				}	
+			}
+			command.add("-Duser.dir=" + System.getProperty("user.dir"));
+			String javaLibraryPath = System.getProperty(Configuration.JAVA_LIBRARY_PATH);
+			if (javaLibraryPath != null) {
+				command.add("-Djava.library.path="+ javaLibraryPath);
+			}
+			command.add("-cp");
+			command.add(System.getProperty("java.class.path"));
 			break;
 		case Configuration.MPI_IMPL_MPJMULTICORE:
 			command.add("java");
-	        
-		    command.add("-Duser.dir=" + System.getProperty("user.dir"));
-		    command.add("-jar");
-		    
-		    // Assemble the path to starter.jar of the MPJ library
-		    String mpjHome = System.getenv("MPJ_HOME");
-		    if (mpjHome == null) {
-		    	throw new Exception("MPJ_HOME was not set. Cannot run the tests");
-		    }
-		    String sep = File.separator;
-		    if (!mpjHome.endsWith(sep)) {
-		    	mpjHome += sep;
-		    }
-		    String pathToStarterJar = mpjHome + "lib" + sep + "starter.jar";
-		    command.add(pathToStarterJar);
-		    
-		    command.add("-cp");
-	        command.add(System.getProperty("java.class.path"));
-	        command.add("-np");
-	      	command.add(String.valueOf(processCount));
+			// Transmit the potential java agents
+			for ( String s :ManagementFactory.getRuntimeMXBean().getInputArguments() ) {
+				if (s.startsWith("-javaagent")) {
+					command.add(s);
+					System.err.println(s);
+				}	
+			}
+			command.add("-Duser.dir=" + System.getProperty("user.dir"));
+			command.add("-jar");
+
+			// Assemble the path to starter.jar of the MPJ library
+			String mpjHome = System.getenv("MPJ_HOME");
+			if (mpjHome == null) {
+				throw new Exception("MPJ_HOME was not set. Cannot run the tests");
+			}
+			String sep = File.separator;
+			if (!mpjHome.endsWith(sep)) {
+				mpjHome += sep;
+			}
+			String pathToStarterJar = mpjHome + "lib" + sep + "starter.jar";
+			command.add(pathToStarterJar);
+
+			command.add("-cp");
+			command.add(System.getProperty("java.class.path"));
+			command.add("-np");
+			command.add(String.valueOf(processCount));
 			break;
 		default:
 			throw new Exception("Unknown MPI implementation <" + 
 					mpiImplementation + ">");
 		}
-        // Common to all configurations are the two last parameters
-        // Three parameters with the optional path to the notification files
-        command.add(launcherClass);
-        command.add(testClass.getCanonicalName());
-        pathToNotifications = System.getProperty(Configuration.NOTIFICATIONS_PATH);
-        if (pathToNotifications != null) {
-        	new File(pathToNotifications).mkdirs();
-        	command.add(pathToNotifications);
-        }
-        
-        //System.out.println(String.join(" ", command));
-        
+		// Common to all configurations are the two last parameters
+		// Three parameters with the optional path to the notification files
+		command.add(launcherClass);
+		command.add(testClass.getCanonicalName());
+		pathToNotifications = System.getProperty(Configuration.NOTIFICATIONS_PATH);
+		if (pathToNotifications != null) {
+			new File(pathToNotifications).mkdirs();
+			command.add(pathToNotifications);
+		}
+
+		System.out.println(String.join(" ", command));
+
 		ProcessBuilder pb = new ProcessBuilder(command);
 		pb.redirectOutput(Redirect.INHERIT);
 		pb.redirectError(Redirect.INHERIT);
-		
+
 		Process p = pb.start();
 		p.waitFor();
 	}
@@ -214,7 +228,7 @@ public class MpiRunner extends Runner {
 		if (action.equals(Configuration.ON_ERROR_SILENT)) {
 			return;
 		}
-		
+
 		Exception failureCause = new Exception("Unable to produce results for this test");
 		failureCause.initCause(e);
 		notifier.fireTestSuiteStarted(getDescription());
@@ -222,7 +236,7 @@ public class MpiRunner extends Runner {
 			if (m.isAnnotationPresent(Test.class)) {
 				Description testDescription = Description.
 						createTestDescription(testClass, m.getName());
-				
+
 				switch (action) {
 				case Configuration.ON_ERROR_ERROR:
 					notifier.fireTestStarted(testDescription);
@@ -235,7 +249,7 @@ public class MpiRunner extends Runner {
 					notifier.fireTestIgnored(testDescription);
 					break;
 				}
-				
+
 			}
 		}
 		notifier.fireTestSuiteFinished(getDescription());
@@ -271,7 +285,7 @@ public class MpiRunner extends Runner {
 				Class<?> paramClass = n.parameters[0].getClass();
 				//Reconstitute the method call
 				Method m = RunNotifier.class.getDeclaredMethod(n.method, paramClass);
-				
+
 				switch (n.method) {
 				case "fireTestFinished":
 				case "fireTestStarted":
@@ -286,8 +300,8 @@ public class MpiRunner extends Runner {
 					Description failDescription = f.getDescription();
 					Description descriptionToUse = Description.
 							createTestDescription(testClass, 
-							"[" + i + "] " + failDescription.getMethodName());
-					
+									"[" + i + "] " + failDescription.getMethodName());
+
 					Failure failureToUse = new Failure(descriptionToUse , f.getException());
 					n.parameters[0] = failureToUse;
 					break;
@@ -306,12 +320,12 @@ public class MpiRunner extends Runner {
 	public void run(RunNotifier notifier) {
 		pathToNotifications = System.getProperty(Configuration.NOTIFICATIONS_PATH);
 		boolean isDryRun = Boolean.parseBoolean(System.getProperty(Configuration.DRY_RUN, Configuration.DRY_RUN_DEFAULT));
-		
+
 		if (isDryRun) {
 			// Override the value KEEP_NOTIFICATIONS to keep the notifications files
 			System.setProperty(Configuration.KEEP_NOTIFICATIONS, "true");
 		} else {
-			// Launch the mpirun process for the test calss
+			// Launch the mpirun process for the test class
 			try {
 				launchMpiProcess();			
 			} catch (Exception e) {
@@ -319,7 +333,7 @@ public class MpiRunner extends Runner {
 				return;
 			}
 		}
-		
+
 		try {
 			parseTestResults(notifier);
 		} catch (Exception e) {
