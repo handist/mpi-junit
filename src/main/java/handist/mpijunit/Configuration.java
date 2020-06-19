@@ -4,7 +4,7 @@ package handist.mpijunit;
  * Contains various {@link String} constants used to define the behavior of the
  * {@link MpiRunner}.  
  * <p>
- * Some settings (such as the number of mpi processes to use) are specific to 
+ * Some settings (such as the number of MPI processes to use) are specific to 
  * each test class and need to be specified using the {@link MpiConfig} on your
  * test class. They cannot be set using the options presented in this class.
  * 
@@ -140,4 +140,21 @@ public class Configuration {
 	 * {@value #KEEP_NOTIFICATIONS_DEFAULT} 
 	 */
 	public static final String KEEP_NOTIFICATIONS_DEFAULT = "false";
+	
+	/**
+	 * Option used to parse only the results of a single rank. By default, the
+	 * test results of all the processes are processed. By setting this option
+	 * with a particular rank, only the test results of this process will be 
+	 * parsed.
+	 * <p>
+	 * For instance, <em>-Dmpirunner.parseNotifications=0</em> will make the 
+	 * {@link MpiRunner} only look for the file with the test results of rank 0.
+	 * <p>
+	 * <em>NOTA BENE</em>: although a single notification file will ever 
+	 * be processed by the MpiRunner, the usual notification file naming 
+	 * convention (with the rank of the process as a suffix) still applies. If
+	 * you are implementing your own Launcher and using this option, you still
+	 * need to have the proper file name. 
+	 */
+	public static final String PARSE_NOTIFICATIONS = "mpirunner.parseNotifications";
 }

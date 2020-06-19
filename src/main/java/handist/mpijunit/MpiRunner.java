@@ -8,7 +8,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -265,8 +264,19 @@ public class MpiRunner extends Runner {
 	 */
 	private void parseTestResults(RunNotifier notifier) throws Exception {
 		// Obtain the notifications of every process
+		// If the mpirunner.parseNotifications was defined, restrict to the 
+		// given rank
 		List<List<Notification>> processesNotifications = new ArrayList<>(processCount);
-		for (int i = 0; i < processCount; i++ ) {
+		int firstRankToProcess = 0;
+		int lastRankToProcess = processCount-1;
+		
+		if (System.getProperty(Configuration.PARSE_NOTIFICATIONS) != null) {
+			firstRankToProcess = Integer.parseInt(System.getProperty(Configuration.PARSE_NOTIFICATIONS));
+			lastRankToProcess = firstRankToProcess;
+			System.out.println("[WARNING] Parsing only the result of rank " + firstRankToProcess);
+		} 
+		
+		for (int i = firstRankToProcess; i <= lastRankToProcess; i++ ) {
 			processesNotifications.add(i, getNotifications(i));
 		}
 
@@ -279,7 +289,7 @@ public class MpiRunner extends Runner {
 			l.remove(l.size()-1);
 		}
 
-		for (int i = 0; i < processCount; i++ ) {
+		for (int i = firstRankToProcess; i <= lastRankToProcess; i++ ) {
 			List<Notification> processNotifications = processesNotifications.get(i);
 
 			for (Notification n : processNotifications) {
