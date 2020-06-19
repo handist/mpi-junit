@@ -273,7 +273,6 @@ public class MpiRunner extends Runner {
 		if (System.getProperty(Configuration.PARSE_NOTIFICATIONS) != null) {
 			firstRankToProcess = Integer.parseInt(System.getProperty(Configuration.PARSE_NOTIFICATIONS));
 			lastRankToProcess = firstRankToProcess;
-			System.out.println("[WARNING] Parsing only the result of rank " + firstRankToProcess);
 		} 
 		
 		for (int i = firstRankToProcess; i <= lastRankToProcess; i++ ) {
