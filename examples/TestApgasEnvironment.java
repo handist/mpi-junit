@@ -1,5 +1,4 @@
 
-
 import static org.junit.Assert.*;
 
 import org.junit.Test;
@@ -14,15 +13,19 @@ import handist.mpijunit.MpiRunner;
 import static apgas.Constructs.*;
 
 /**
- * Test class that checks how the Junit various asserts behave with the APGAS
- * remote activities and illustrates how to handle them. 
+ * Test class that checks how the Junit assertions behave with the APGAS
+ * remote activities framework and illustrates how to handle them. 
+ * <p>
+ * A specific launcher included in this library is used: (MpiApgasTestLauncher.class). 
+ * This launcher will initialize both the APGAS and the MPI environment before
+ * launching the tests. 
  */
 @RunWith(MpiRunner.class)
 @MpiConfig(ranks=2, launcher=MpiApgasTestLauncher.class)
 public class TestApgasEnvironment {
 
 	/**
-	 * Checks that the test is indeed run with multiple places
+	 * Checks that the test is indeed run with multiple APGAS places
 	 */
 	@Test
 	public void testMultipleHosts() {
@@ -32,7 +35,7 @@ public class TestApgasEnvironment {
 
 	/**
 	 * Tests the failure of an assertEquals call in an asynchronous remote
-	 * remote activity.
+	 * activity.
 	 */
 	@Test(expected=java.lang.AssertionError.class)
 	public void testRemoteAssertEqualsFailure() throws Throwable {
@@ -49,6 +52,5 @@ public class TestApgasEnvironment {
 				Throwable[] suppressed = e.getSuppressed();
 				throw(suppressed[0]);
 			}
-		
 	}
 }

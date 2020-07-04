@@ -1,5 +1,3 @@
-
-
 import static org.junit.Assert.*;
 
 import org.junit.BeforeClass;
@@ -12,12 +10,13 @@ import handist.mpijunit.MpiRunner;
 import mpi.MPI;
 
 /**
- * Test class that checks how the Junit various asserts behave with the APGAS
- * remote activities and illustrates how to handle them. 
+ * Test class that demonstrates how the tests are run and
+ * how the Junit assertions / failure behave in case they 
+ * fail.  
  */
 @RunWith(MpiRunner.class)
 @MpiConfig(ranks=4)
-public class ITMpiEnvironment {
+public class TestMpiEnvironment {
 
 	static int rank = -1;
 	static int size = -1;
@@ -27,8 +26,9 @@ public class ITMpiEnvironment {
 		rank = MPI.COMM_WORLD.Rank();
 		size = MPI.COMM_WORLD.Size();
 	}
-	/**
-	 * Checks that the test was indeed run with multiple places
+	
+  /**
+	 * Checks that the test was indeed run with multiple hosts
 	 */
 	@Test
 	public void testMultipleHosts() {
