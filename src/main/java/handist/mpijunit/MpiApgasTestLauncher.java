@@ -9,7 +9,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.List;
 
-import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
 import apgas.Configuration;
@@ -239,7 +238,7 @@ final public class MpiApgasTestLauncher implements Launcher {
 	 *
 	 * @param  args  first argument is the fully qualified name of the class whose
 	 * 	tests are to launch, the second argument is the path under which the 
-	 * 	{@link Notification}s sent to the Junit {@link RunNotifier} are to be 
+	 * 	{@link Notification}s sent to Junit are to be 
 	 * 	written.  
 	 * @throws Exception if an MPI exception occur
 	 */

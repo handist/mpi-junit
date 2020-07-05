@@ -19,16 +19,18 @@ import org.junit.runners.model.InitializationError;
 /**
  * Custom Junit {@link Runner} which uses MPI to run the test class it receives. 
  * This implementation relies on a {@link ProcessBuilder} to launch a <em>mpirun
- * </em> process which will run the tests on the specified number of ranks. Test
- * methods are therefore executed in parallel and can communicate using MPI.  
- * After the test methods have run, the results of the tests of each mpi process
+ * </em> process which will run the tests with the specified number of ranks. 
+ * Test methods are therefore executed in parallel and can communicate using 
+ * MPI.
+ * <p>
+ * After the test methods have run, the results of the tests of each mpi rank
  * are written to files on the system. This class then parses these files and
  * aggregates the test results before transmitting them to the normal Junit4
  * notification mechanism. 
  * <p>
- * General settings for the behavior of the {@link MpiRunner} can be found in 
- * {@link Configuration}. For execution details of test classes such as the 
- * number of ranks to use, refer to the {@link MpiConfig} annotation. 
+ * General configuration options for the {@link MpiRunner} can be found in 
+ * {@link Configuration}. For configuration specific to individual test classes,
+ * refer to the {@link MpiConfig} annotation. 
  *  
  * @author Patrick Finnerty
  *
@@ -41,7 +43,7 @@ public class MpiRunner extends Runner {
 	/** Directory path to the notification */
 	String pathToNotifications;
 
-	/** Number of processes to run */
+	/** Number of ranks desired */
 	int processCount;
 
 	/** Class under test */
@@ -49,9 +51,10 @@ public class MpiRunner extends Runner {
 
 	/**
 	 * Constructor with the class to test provided as parameter
+	 * 
 	 * @param klass the class to test
 	 * @throws InitializationError if the given test class cannot be run by the 
-	 * 	MpiRunner, if it does not have a {@link MpiConfig} annotation for 
+	 * 	MpiRunner, i.e. if it does not have a {@link MpiConfig} annotation for 
 	 *  instance
 	 */
 	public MpiRunner(Class<?> klass) throws InitializationError {
@@ -62,7 +65,7 @@ public class MpiRunner extends Runner {
 			setupConfiguration(configs[0]);
 		} else {
 			throw new InitializationError("The test class " + testClass + 
-					" is missing a @Config annotation.");
+					" is missing a @MpiConfig annotation.");
 		}
 	}
 
@@ -99,8 +102,8 @@ public class MpiRunner extends Runner {
 	 *  
 	 * @param rank the integer indicating the process whose notifications
 	 * 	need to be retrieved
-	 * @return an {@link ArrayList} containing the notifications that were 
-	 * 	emitted by the target process
+	 * @return an {@link ArrayList} containing the {@link Notification} that 
+	 *  were made by the target rank during the test execution
 	 */
 	@SuppressWarnings("unchecked")
 	private ArrayList<Notification> getNotifications(int rank)
@@ -123,8 +126,7 @@ public class MpiRunner extends Runner {
 	}
 
 	/**
-	 * Builds the command and launches a <em>mpirun</em> process that will run
-	 * the test class on multiple mpi processes.
+	 * Builds the command and launches a process that will run the test class.
 	 * 
 	 * @throws Exception if an exception occurs when launching the process
 	 */
@@ -161,13 +163,19 @@ public class MpiRunner extends Runner {
 			break;
 		case Configuration.MPI_IMPL_MPJMULTICORE:
 			command.add("java");
-			// Transmit the potential java agents
-			for ( String s :ManagementFactory.getRuntimeMXBean().getInputArguments() ) {
-				if (s.startsWith("-javaagent")) {
-					s = s.replace("\\\\", "\\");
-					command.add(s);
-				}	
-			}
+// 			Transmit the potential java agents
+//==============================================================================			
+//			Due to the implementation of MPJ-Express (which internally also 
+//			launches a Process), the java agents are not transmitted to the 
+//			process that actually runs the tests. It is therefore pointless to
+//			transmit the java agents here. 
+//==============================================================================
+//			for ( String s :ManagementFactory.getRuntimeMXBean().getInputArguments() ) {
+//				if (s.startsWith("-javaagent")) {
+//					s = s.replace("\\\\", "\\");
+//					command.add(s);
+//				}	
+//			}
 			command.add("-Duser.dir=" + System.getProperty("user.dir"));
 			command.add("-jar");
 
@@ -192,8 +200,8 @@ public class MpiRunner extends Runner {
 			throw new Exception("Unknown MPI implementation <" + 
 					mpiImplementation + ">");
 		}
-		// Common to all configurations are the two last parameters
-		// Three parameters with the optional path to the notification files
+		// Common to all configurations are the two last parameters(three 
+		// parameters if the optional path to the notification files was set)
 		command.add(launcherClass);
 		command.add(testClass.getCanonicalName());
 		pathToNotifications = System.getProperty(Configuration.NOTIFICATIONS_PATH);
@@ -214,8 +222,8 @@ public class MpiRunner extends Runner {
 
 	/**
 	 * Posts dummy test results to the notifier in case something went wrong in
-	 * this class's runtime when trying to run the tests using MPI or when 
-	 * parsing and combining the test results of each rank.
+	 * this class's runtime when trying to run the tests or when parsing and 
+	 * combining the test results of each rank.
 	 * <p>
 	 * Users can choose the behavior of this method by defining the variable 
 	 * {@link MpiApgasRunner#ifRuntimeProblemShow}.
@@ -256,8 +264,8 @@ public class MpiRunner extends Runner {
 	}
 
 	/**
-	 * Parses the test results of each mpi rank and transmits them to the 
-	 * provided {@link RunNotifier}.  
+	 * Parses the test results of each rank and transmits them to the provided 
+	 * {@link RunNotifier}.  
 	 *  
 	 * @param notifier the notifier to which the aggregated test results need to
 	 * 	be transmitted
@@ -323,8 +331,9 @@ public class MpiRunner extends Runner {
 	}
 
 	/**
-	 * Launches a <em>mpirun</em> process with the test class. Then parses the 
-	 * results of each rank and transmits them to the given {@link RunNotifier}. 
+	 * Launches a MPI process with the test class to run the tests. Then parses
+	 * the results of each rank and transmits them to the given 
+	 * {@link RunNotifier}. 
 	 */
 	@Override
 	public void run(RunNotifier notifier) {
@@ -353,9 +362,11 @@ public class MpiRunner extends Runner {
 	}
 
 	/**
-	 * Helper method that uses the provided Config
-	 * @param cfg configuration to use to run the tests
-	 * @return 
+	 * Helper method that uses the provided {@link MpiConfig} to set some 
+	 * members of this class. 
+	 * 
+	 * @param cfg configuration to use to run the tests (provided by the test 
+	 * class) 
 	 */
 	private void setupConfiguration(MpiConfig cfg) {
 		processCount = cfg.ranks();

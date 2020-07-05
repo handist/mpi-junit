@@ -7,11 +7,12 @@ import org.junit.runner.notification.RunNotifier;
 
 /**
  * Class used to capture the fact the {@link ToFileRunNotifier} was called. 
- * An instance of this class represents a single call to the notifier. 
- * When each mpi process has terminated, the {@link MpiRunner} gathers the 
- * calls made to the {@link ToFileRunNotifier} in each rank and reproduces 
- * these calls on its own {@link RunNotifier}, effectively transmitting the results
- * of every mpi process.
+ * An instance of this class represents a single call to the notifier. When the
+ * tests have completed and the calls to the notifier of each rank have been 
+ * written to a file, the {@link MpiRunner} parses these files and reproduces 
+ * the calls made to the Junit notifier on its own {@link RunNotifier} for each
+ * rank, effectively transmitting the test results of rank used to run the
+ * tests.
  *  
  * @author Patrick Finnerty
  * @see ToFileRunNotifier
@@ -50,6 +51,7 @@ public class Notification implements Serializable {
 		parameters = params;
 	}
 	
+	@Override
 	public String toString() {
 		return method + "(" + parameters[0].toString() + ")";
 	}
