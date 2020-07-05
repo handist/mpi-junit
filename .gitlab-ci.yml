@@ -23,7 +23,7 @@ javadoc:
     - mvn $MAVEN_CLI_OPTS site
 
 publish:
-  stage: report
+  stage: publish
   script:
     - mvn $MAVEN_CLI_OPTS site
     - cd target
