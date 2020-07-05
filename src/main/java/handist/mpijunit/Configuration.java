@@ -5,8 +5,9 @@ package handist.mpijunit;
  * {@link MpiRunner}.  
  * <p>
  * Some settings (such as the number of MPI processes to use) are specific to 
- * each test class and need to be specified using the {@link MpiConfig} on your
- * test class. They cannot be set using the options presented in this class.
+ * each test class and need to be specified using the {@link MpiConfig} 
+ * annotations on your individual test classes. They cannot be set using the 
+ * options presented in this class.
  * 
  * @author Patrick Finnerty
  *
@@ -14,77 +15,101 @@ package handist.mpijunit;
 public class Configuration {
 
 	/** 
-	 * Option defining what should be done in case the MpiRunner encounters an 
-	 * Exception when running the tests. Should be set with command-line option
-	 * <em>-Dmpirunner.actionOnFAilure=action</em>. Possible actions are: 
+	 * Option defining what should be done in case the {@link MpiRunner} 
+	 * encounters an Exception when running the tests. These usually happen due
+	 * to classpath issues or the unavaibility of the <em>mpirun</em> command.
+	 * This option does not change the results of the tests that run. It is here
+	 * to decide what to present if the {@link MpiRunner} was unable to run the
+	 * tests successfully. 
+	 * <p> 
+	 * This option should be set with <em>-Dmpirunner.actionOnError=action</em>. 
+	 * Possible actions are: 
 	 * <ul>
-	 * <li>{@value #ON_ERROR_ERROR} which marks the tests results as errors. 
-	 * 	This is the default behavior.  
-	 * <li>{@value #ON_ERROR_SKIP} which marks the tests as skipped as if they 
-	 * were marked with the @Ignore annotation.
+	 * <li>{@value #ON_ERROR_ERROR} which will marks the tests results as 
+	 * "error". This is the default behavior.  
+	 * <li>{@value #ON_ERROR_SKIP} which will mark the tests as skipped (as if 
+	 * they were marked with the @Ignore annotation inside your test class).
 	 * <li>{@value #ON_ERROR_SILENT} which does not transmit any result for the 
 	 * tests   
 	 * </ul>
 	 */
 	public static final String ACTION_ON_ERROR = "mpirunner.actionOnError";
-	/** Possible setting for {@link #ACTION_ON_ERROR}, show tests as "Error" */
+	/** 
+	 * Possible setting for {@link #ACTION_ON_ERROR}, shows tests as "Error" 
+	 */
 	public static final String ON_ERROR_ERROR = "error";
-	/** Possible setting for {@link #ACTION_ON_ERROR}, do not show any result */
+	/** 
+	 * Possible setting for {@link #ACTION_ON_ERROR}, does not show any result 
+	 */
 	public static final String ON_ERROR_SILENT = "silent";
-	/** Possible setting for {@link #ACTION_ON_ERROR}, show tests as "Skipped" */
+	/** 
+	 * Possible setting for {@link #ACTION_ON_ERROR}, shows tests as "Skipped"
+	 */
 	public static final String ON_ERROR_SKIP = "skip";
-	/** Default action for {@link #ACTION_ON_ERROR}, is {@link #ON_ERROR_ERROR} */
+	/** 
+	 * Default action for {@link #ACTION_ON_ERROR}, is {@link #ON_ERROR_ERROR}
+	 */
 	public static final String ACTION_ON_ERROR_DEFAULT = ON_ERROR_ERROR;
+	
 	/**
 	 * Command line option to choose whether the <em>mpirun</em> process should
-	 * actually be launched. Can be set by the JVM argument <em>-Dmpirunner.dryRun=true/false</em>. 
+	 * actually be launched. Can be set by the JVM argument 
+	 * <em>-Dmpirunner.dryRun=true/false</em>. 
 	 * By default, it is set to <code>false</code>, meaning that the  
-	 * {@link MpiRunner} will try to launch a <em>mpirun</em> process. 
+	 * {@link MpiRunner} will try to launch multiple processes to run the tests. 
 	 * <p>
 	 * However, if this option is set to <code>true</code>, the 
-	 * {@link MpiRunner} will only try to parse the {@link Notification} 
-	 * recordings. In addition, the recordings will be kept on the system 
+	 * {@link MpiRunner} will only attempt to parse the {@link Notification} 
+	 * recordings. In addition, the recordings will be kept on the file system 
 	 * regardless of what is set for option {@link #KEEP_NOTIFICATIONS}.   
 	 * <p>
-	 * This can be useful if you want to parse the test results from a different 
-	 * system on your local machine. 
+	 * This option can be useful if you want to parse the test results from a 
+	 * different system on your local machine which may not be equipped with the
+	 * software needed to run the tests.  
 	 */
 	public static final String DRY_RUN = "mpirunner.dryRun";
 	/** Default setting for {@link #DRY_RUN} */
 	public static final String DRY_RUN_DEFAULT = "false";
+	
 	/**
 	 * Command line option used to define the <em>-Djava.library.path</em> 
 	 * option of the mpi process launched by the {@link MpiRunner}. Set it by 
 	 * defining <em>-Dmpirunner.javaLibraryPath=path/to/native/libs</em>.  
 	 * This setting  has no default value. If it is not set, no particular 
 	 * java library path will be set for the processes launched by the 
-	 * {@link MpiRunner}.  
+	 * {@link MpiRunner}.
+	 * <p>
+	 * If you are using using a native implementation of MPI to run your tests,
+	 * you almost certainly need to specify this option. 
 	 */
 	public static final String JAVA_LIBRARY_PATH = "mpirunner.javaLibraryPath";
 			
 	/**
 	 * Command line option to define the MPI implementation used to launch the 
-	 * mpi tests. This can be used to run a script rather than the "mpirun" 
-	 * command. Set this setting with <em>-Dmpirunner.mpiImpl=implementation</em>.
+	 * mpi tests. Set this setting with 
+	 * <em>-Dmpirunner.mpiImpl=implementation</em>.
 	 * <p>
-	 * Current supported implementations are:
+	 * Currently supported implementations are:
 	 * <ul>
-	 * <li>{@value #MPI_IMPL_NATIVE}
-	 * <li>{@value #MPI_IMPL_MPJMULTICORE}
+	 * <li>{@value #MPI_IMPL_NATIVE} which relies on the 
+	 * <a href="https://sourceforge.net/projects/mpijava/">mpiJava library</a>
+	 * <li>{@value #MPI_IMPL_MPJMULTICORE} which uses the 
+	 * <a href="http://mpj-express.org/">MPJ-Express</a> "multicore" 
+	 * implementation. (default value) 
 	 * </ul>
-	 * In the {@link #MPI_IMPL_NATIVE} implementation, the <em>mpirun</em> command will be used. 
-	 * You can set the options of that command by setting the {@value #MPIRUN_OPTION}
-	 * variable. 
+	 * If you are using the {@link #MPI_IMPL_NATIVE} implementation, you can use
+	 * the {@value #MPIRUN_OPTION} to specify options to the <em>mpirun</em>
+	 * command. 
 	 */
 	public static final String MPI_IMPL = "mpirunner.mpiImpl";
 	
 	/** 
 	 * Possible option for the MPI implementation used to launch the tests. 
-	 * When using the <em>native</em> implementation, be careful of the fact you
+	 * When using the <em>native</em> implementation, be mindful of the fact you
 	 * will need to provide the path to the shared objects bindings to the MPI
-	 * library you are using. You can do this by setting option 
-	 * {@link #JAVA_LIBRARY_PATH}. You can also give additional arguments to the
-	 * <em>mpirun</em> command by setting {@link #MPIRUN_OPTION}.  
+	 * library you are using with {@link #JAVA_LIBRARY_PATH}. 
+	 * You can also give additional arguments to the <em>mpirun</em> command by 
+	 * setting {@link #MPIRUN_OPTION}.  
 	 */ 
 	public static final String MPI_IMPL_NATIVE = "native";
 	/** 
@@ -94,7 +119,7 @@ public class Configuration {
 	 * <em>MPJ_HOME</em> as an environment variable as this is needed by the MPJ
 	 * library to run correctly. We refer you to 
 	 * <a href="http://mpj-express.org/">the MPJ Express website</a> for
-	 * downloads and documentation.   
+	 * downloads and documentation about this library.   
 	 */
 	public static final String MPI_IMPL_MPJMULTICORE = "mpj-multicore";
 	
@@ -103,58 +128,66 @@ public class Configuration {
 	
 	/**
 	 * Settings to give options to the <em>mpirun</em> command when a 
-	 * <em>native</em> MPI implementation id used. Is not set by default (by 
-	 * default, no options are passed to the <em>mpirun</em> command except 
-	 * <em>-np X</em> where X is the number of processes requested by your test 
-	 * class). 
+	 * <em>native</em> MPI implementation id used. Use 
+	 * <em>-Dmpirunner.mpirunOptions=some options</em> to set it.
+	 * <p>
+	 * By default, this option is not set (by default, no options are passed to 
+	 * the <em>mpirun</em> command except <em>-np X</em> where X is the number 
+	 * of processes requested by your test class, as defined in the 
+	 * {@link MpiConfig} annotation). You should not set option 
+	 * <em>-np X</em> using this option, it is done by the {@link MpiRunner}.  
 	 */
 	public static final String MPIRUN_OPTION = "mpirunner.mpirunOptions";
 	
 	/**
-	 * Option to specify the directory in which the notifications of each mpi 
-	 * process will be placed. Set it using <em>-Dmpirunner.notificationsPath=direcotryToNotifications</em>.
+	 * Option to specify the directory in which the notifications of each rank 
+	 * will be placed. Set it using 
+	 * <em>-Dmpirunner.notificationsPath=directory/to/notifications</em>. If you
+	 * do not set this option, the working directory will be used. 
+	 * <p>
 	 * If the directory does not exist, it will be created. However, note that
 	 * the recording files are deleted by default by the {@link MpiRunner}
-	 * after they are parsed. To keep the recordings, set {@link #KEEP_NOTIFICATIONS}
-	 * to true. 
+	 * after they are parsed. To keep the recordings, you also need to set 
+	 * {@link #KEEP_NOTIFICATIONS} to true. 
 	 */
 	public static final String NOTIFICATIONS_PATH = "mpirunner.notificationsPath";
 	
 	/**
 	 * Command line option used to choose whether the files containing the 
-	 * {@link Notification}s that are made to the RunNotifier in each MPI 
-	 * process should be kept after the tests' execution. Set it by defining 
-	 * <em>-Dmpirunner.keepNotifications=true/false</em>. This option is 
-	 * <code>false</code> by default, meaning these files will deleted after 
-	 * they are parsed.
+	 * {@link Notification}s that are made to the RunNotifier in each of the MPI 
+	 * processes should be kept after the tests' execution. Set it by defining 
+	 * <em>-Dmpirunner.keepNotifications=true/false</em>. This option is set to 
+	 * <code>false</code> by default, meaning the notification files will 
+	 * deleted after they are parsed by the {@link MpiRunner}.
 	 * <p>
 	 * This can be useful if you want to parse the results on a different system
-	 * then the one they were executed on. For instance, I find it convenient to
-	 * run the tests on a server with this option set to <code>true</code>, 
-	 * download the notification recordings and parse the results on my personal
-	 * machine using the {@link #DRY_RUN} option.  
+	 * then the one they were executed on. For instance, you may find it 
+	 * convenient to run your tests on a server with this option set to 
+	 * <code>true</code>, download the notification recordings and parse the 
+	 * results on your personal machine using the {@link #DRY_RUN} option.  
 	 */
 	public static final String KEEP_NOTIFICATIONS = "mpirunner.keepNotifications";
 	/** 
 	 * Default setting for {@link #KEEP_NOTIFICATIONS}, is 
-	 * {@value #KEEP_NOTIFICATIONS_DEFAULT} 
+	 * {@value #KEEP_NOTIFICATIONS_DEFAULT} .
 	 */
 	public static final String KEEP_NOTIFICATIONS_DEFAULT = "false";
 	
 	/**
 	 * Option used to parse only the results of a single rank. By default, the
 	 * test results of all the processes are processed. By setting this option
-	 * with a particular rank, only the test results of this process will be 
-	 * parsed.
+	 * with a particular rank number, only the test results of this process 
+	 * will be parsed.
 	 * <p>
 	 * For instance, <em>-Dmpirunner.parseNotifications=0</em> will make the 
 	 * {@link MpiRunner} only look for the file with the test results of rank 0.
 	 * <p>
 	 * <em>NOTA BENE</em>: although a single notification file will ever 
-	 * be processed by the MpiRunner, the usual notification file naming 
-	 * convention (with the rank of the process as a suffix) still applies. If
-	 * you are implementing your own Launcher and using this option, you still
-	 * need to have the proper file name. 
+	 * be processed by the {@link MpiRunner} when using this option, 
+	 * the usual notification file naming convention (with the rank of the 
+	 * process as a suffix) still applies. If you are implementing your own 
+	 * Launcher and using this option, you still need to observe this naming 
+	 * convention. 
 	 */
 	public static final String PARSE_NOTIFICATIONS = "mpirunner.parseNotifications";
 }
