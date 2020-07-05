@@ -6,7 +6,7 @@ stages:
   - publish
 
 variables:
-  MAVEN_CLI_OPTS: "--batch-mode -Pmpijava"
+  MAVEN_CLI_OPTS: "--batch-mode"
 
 cache:
   paths:
