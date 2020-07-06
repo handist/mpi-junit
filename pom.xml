@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>handist</groupId>
 	<artifactId>mpi-junit</artifactId>
-	<version>1.1-SNAPSHOT</version>
+	<version>1.2</version>
 	<name>mpi-junit</name>
 	<description>A custom Junit4 runner which makes it possible to run Junit tests in a distributed environment with MPI calls made between processes.</description>
 
