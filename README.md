@@ -24,8 +24,8 @@ obtain as many test results as there are ranks for each of your test methods.
 |Version|Changes|
 |-|-|
 | master-latest | Development head<br>[(Javadoc)](master-latest/apidocs/index.html)<br>[(Maven Report)](master-latest/index.html) |
-| v1.1 | Released July 5th 2020<br>Added support for MPJ-multicore environment as well as a number of useful customization options<br>[(Javadoc)](v1.1/apidocs/index.html)<br>[(Maven Report)](v1.1/index.html)<br>[(Download mpi-junit-1.1.jar)](https://github.com/handist/mpi-junit/releases/download/v1.1/mpi-junit-1.1.jar) |
-| v1.0 | Original release limited to mpiJava v1.2.7 native Mpi bindings |
+| v1.2 | Released July 6th 2020<br>Added support for MPJ-multicore environment as well as a number of useful customization options<br>[(Javadoc)](v1.2/apidocs/index.html)<br>[(Maven Report)](v1.2/index.html)<br>[(Download mpi-junit-1.2.jar)](https://github.com/handist/mpi-junit/releases/download/v1.2/mpi-junit-1.2.jar) |
+| v1.0 | Original release limited to mpiJava v1.2.7 native Mpi bindings. Use is not recommended due to issues in the project configuration. |
 
 # How it works
 
