@@ -47,7 +47,7 @@ This places a number of requirements on the system running the tests:
 
 ### 1.2 MPJ Express "multicore" configuration
 
-## Running the tests
+## 2. Running the tests
 
 The tests contained in the test class are run by the launcher on each rank using the regular Junit4 framework but using a custom Notification implementation.
 
