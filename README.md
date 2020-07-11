@@ -39,6 +39,8 @@ As the use of custom Runners is an integral feature of the Junit4 framework,
 using the MpiRunner should integrate seamlessly with the system you use to run
 your tests, whether it be the Eclipse Junit launchers / Maven ...
 
+[(click here for more detailed information)](HowItWorks.md)
+
 # Dependencies
 
 All the dependencies for this project are included with the "provided" maven
