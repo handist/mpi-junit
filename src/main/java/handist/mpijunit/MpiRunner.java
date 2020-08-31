@@ -23,6 +23,7 @@ import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
 
 /**
@@ -88,21 +89,30 @@ public class MpiRunner extends Runner {
 	 */
 	@Override
 	public Description getDescription() {
-		Description toReturn = Description.createSuiteDescription(testClass);
-
-		for (Method m : testClass.getMethods()) {
-			if (m.isAnnotationPresent(Test.class)) {
-				Description methodDescription = Description.createTestDescription(testClass, m.getName());
-				for (int i = 0; i < processCount; i++) {
-					Description leafDescription = Description.createTestDescription(testClass, "[" + i + "] " + m.getName()); 
-					methodDescription.addChild(leafDescription);
-
-				}
-				toReturn.addChild(methodDescription);
+		if (System.getProperty(Configuration.PARSE_NOTIFICATIONS) != null) {
+			try {
+				return new BlockJUnit4ClassRunner(testClass).getDescription();
+			} catch (InitializationError e) {
+				e.printStackTrace();
 			}
-		}
+			return null;
+		} else {
+			Description toReturn = Description.createSuiteDescription(testClass);
 
-		return toReturn;
+			for (Method m : testClass.getMethods()) {
+				if (m.isAnnotationPresent(Test.class)) {
+					Description methodDescription = Description.createTestDescription(testClass, m.getName());
+					for (int i = 0; i < processCount; i++) {
+						Description leafDescription = Description.createTestDescription(testClass, "[" + i + "] " + m.getName()); 
+						methodDescription.addChild(leafDescription);
+
+					}
+					toReturn.addChild(methodDescription);
+				}
+			}
+
+			return toReturn;
+		}
 	}
 
 	/**
@@ -172,19 +182,19 @@ public class MpiRunner extends Runner {
 			break;
 		case Configuration.MPI_IMPL_MPJMULTICORE:
 			command.add("java");
-// 			Transmit the potential java agents
-//==============================================================================			
-//			Due to the implementation of MPJ-Express (which internally also 
-//			launches a Process), the java agents are not transmitted to the 
-//			process that actually runs the tests. It is therefore pointless to
-//			transmit the java agents here. 
-//==============================================================================
-//			for ( String s :ManagementFactory.getRuntimeMXBean().getInputArguments() ) {
-//				if (s.startsWith("-javaagent")) {
-//					s = s.replace("\\\\", "\\");
-//					command.add(s);
-//				}	
-//			}
+			// 			Transmit the potential java agents
+			//==============================================================================			
+			//			Due to the implementation of MPJ-Express (which internally also 
+			//			launches a Process), the java agents are not transmitted to the 
+			//			process that actually runs the tests. It is therefore pointless to
+			//			transmit the java agents here. 
+			//==============================================================================
+			//			for ( String s :ManagementFactory.getRuntimeMXBean().getInputArguments() ) {
+			//				if (s.startsWith("-javaagent")) {
+			//					s = s.replace("\\\\", "\\");
+			//					command.add(s);
+			//				}	
+			//			}
 			command.add("-Duser.dir=" + System.getProperty("user.dir"));
 			command.add("-jar");
 
@@ -286,12 +296,14 @@ public class MpiRunner extends Runner {
 		List<List<Notification>> processesNotifications = new ArrayList<>(processCount);
 		int firstRankToProcess = 0;
 		int lastRankToProcess = processCount-1;
-		
-		if (System.getProperty(Configuration.PARSE_NOTIFICATIONS) != null) {
+
+		final boolean SINGLE_HOST_PARSING = System.getProperty(Configuration.PARSE_NOTIFICATIONS) != null;
+
+		if (SINGLE_HOST_PARSING) {
 			firstRankToProcess = Integer.parseInt(System.getProperty(Configuration.PARSE_NOTIFICATIONS));
 			lastRankToProcess = firstRankToProcess;
 		} 
-		
+
 		for (int i = firstRankToProcess; i <= lastRankToProcess; i++ ) {
 			processesNotifications.add(i, getNotifications(i));
 		}
@@ -313,26 +325,28 @@ public class MpiRunner extends Runner {
 				//Reconstitute the method call
 				Method m = RunNotifier.class.getDeclaredMethod(n.method, paramClass);
 
-				switch (n.method) {
-				case "fireTestFinished":
-				case "fireTestStarted":
-				case "fireTestIgnored": 
-					Description d = (Description) n.parameters[0];
-					Description toUse = Description.createTestDescription(testClass, "[" + i + "] " + d.getMethodName());
-					n.parameters[0] = toUse;
-					break;
-				case "fireTestAssumptionFailed":
-				case "fireTestFailure":
-					Failure f = (Failure) n.parameters[0];
-					Description failDescription = f.getDescription();
-					Description descriptionToUse = Description.
-							createTestDescription(testClass, 
-									"[" + i + "] " + failDescription.getMethodName());
+				if (!SINGLE_HOST_PARSING) { // We modify the calls to distinguish results of != places
+					switch (n.method) {
+					case "fireTestFinished":
+					case "fireTestStarted":
+					case "fireTestIgnored": 
+						Description d = (Description) n.parameters[0];
+						Description toUse = Description.createTestDescription(testClass, "[" + i + "] " + d.getMethodName());
+						n.parameters[0] = toUse;
+						break;
+					case "fireTestAssumptionFailed":
+					case "fireTestFailure":
+						Failure f = (Failure) n.parameters[0];
+						Description failDescription = f.getDescription();
+						Description descriptionToUse = Description.
+								createTestDescription(testClass, 
+										"[" + i + "] " + failDescription.getMethodName());
 
-					Failure failureToUse = new Failure(descriptionToUse , f.getException());
-					n.parameters[0] = failureToUse;
-					break;
-				default:
+						Failure failureToUse = new Failure(descriptionToUse , f.getException());
+						n.parameters[0] = failureToUse;
+						break;
+					default:
+					}
 				}
 				m.invoke(notifier, n.parameters);
 			}
