@@ -154,11 +154,15 @@ public class MpiRunner extends Runner {
 
 		String mpiImplementation = System.getProperty(Configuration.MPI_IMPL, 
 				Configuration.MPI_IMPL_DEFAULT);
+
+		String mpirunOptions = System.getProperty(Configuration.MPIRUN_OPTION);
+		String mpjHome = System.getenv("MPJ_HOME");
+		String sep = File.separator;
+
 		// Depending on the implementation, build a different command
 		switch (mpiImplementation) {
 		case Configuration.MPI_IMPL_NATIVE:
 			command.add("mpirun");
-			String mpirunOptions = System.getProperty(Configuration.MPIRUN_OPTION);
 			if (mpirunOptions!=null) {
 				command.add(mpirunOptions);
 			}
@@ -177,6 +181,34 @@ public class MpiRunner extends Runner {
 			if (javaLibraryPath != null) {
 				command.add("-Djava.library.path="+ javaLibraryPath);
 			}
+			command.add("-cp");
+			command.add(System.getProperty("java.class.path"));
+			break;
+		case Configuration.MPI_IMPL_MPJNATIVE:
+			if (mpjHome == null) {
+				throw new Exception("MPJ_HOME was not set. Cannot run the tests");
+			}
+			command.add("mpirun");
+			if (mpirunOptions!=null) {
+				command.add(mpirunOptions);
+			}
+			command.add("-np");
+			command.add(String.valueOf(processCount));
+			command.add("java");
+			// Transmit the potential java agents
+			for ( String s :ManagementFactory.getRuntimeMXBean().getInputArguments() ) {
+				if (s.startsWith("-javaagent")) {
+					s = s.replace("\\\\", "\\");
+					command.add(s);
+				}	
+			}
+			command.add("-Duser.dir=" + System.getProperty("user.dir"));
+
+			if (!mpjHome.endsWith(sep)) {
+				mpjHome += sep;
+			}
+			String pathToNativeLib= mpjHome + "lib";
+			command.add("-Djava.library.path="+pathToNativeLib);
 			command.add("-cp");
 			command.add(System.getProperty("java.class.path"));
 			break;
@@ -199,11 +231,9 @@ public class MpiRunner extends Runner {
 			command.add("-jar");
 
 			// Assemble the path to starter.jar of the MPJ library
-			String mpjHome = System.getenv("MPJ_HOME");
 			if (mpjHome == null) {
 				throw new Exception("MPJ_HOME was not set. Cannot run the tests");
 			}
-			String sep = File.separator;
 			if (!mpjHome.endsWith(sep)) {
 				mpjHome += sep;
 			}
@@ -222,6 +252,15 @@ public class MpiRunner extends Runner {
 		// Common to all configurations are the two last parameters(three 
 		// parameters if the optional path to the notification files was set)
 		command.add(launcherClass);
+
+		// In the case of MPJ native implementation, insert 3 arguments
+		if (Configuration.MPI_IMPL_MPJNATIVE.equals(mpiImplementation)) {
+			// Three parameters for the mpj native configuration
+			command.add("0");
+			command.add("0");
+			command.add("native");
+		}
+
 		command.add(testClass.getCanonicalName());
 		pathToNotifications = System.getProperty(Configuration.NOTIFICATIONS_PATH);
 		if (pathToNotifications != null) {
@@ -229,7 +268,7 @@ public class MpiRunner extends Runner {
 			command.add(pathToNotifications);
 		}
 
-		//System.out.println(String.join(" ", command));
+		//System.out.println("[MpiRunner] Effective Command " + String.join(" ", command));
 
 		ProcessBuilder pb = new ProcessBuilder(command);
 		pb.redirectOutput(Redirect.INHERIT);
