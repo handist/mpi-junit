@@ -104,7 +104,10 @@ public class Configuration {
 	 * <a href="https://sourceforge.net/projects/mpijava/">mpiJava library</a>
 	 * <li>{@value #MPI_IMPL_MPJMULTICORE} which uses the 
 	 * <a href="http://mpj-express.org/">MPJ-Express</a> "multicore" 
-	 * implementation. (default value) 
+	 * implementation. (default value)
+	 * <li>{@value #MPI_IMPL_MPJNATIVE} which uses the 
+	 * <a href="http://mpj-express.org/">MPJ-Express</a> "native" 
+	 * implementation.
 	 * </ul>
 	 * If you are using the {@link #MPI_IMPL_NATIVE} implementation, you can use
 	 * the {@value #MPIRUN_OPTION} to specify options to the <em>mpirun</em>
@@ -121,6 +124,7 @@ public class Configuration {
 	 * setting {@link #MPIRUN_OPTION}.  
 	 */ 
 	public static final String MPI_IMPL_NATIVE = "native";
+	
 	/** 
 	 * Possible option for the MPI implementation used to launch the tests.
 	 * <p>
@@ -131,6 +135,19 @@ public class Configuration {
 	 * downloads and documentation about this library.   
 	 */
 	public static final String MPI_IMPL_MPJMULTICORE = "mpj-multicore";
+	
+	/**
+	 * Possible option for the MPI implementation used to launch the tests.
+	 * <p>
+	 * When using the MPJ native configuration, you will need to set 
+	 * <em>MPJ_HOME</em> as an environment variable. It is also expected that
+	 * you have library <em>mpj.jar</em> and <em>libnativempjdev.so</em> in
+	 * directory <em>MPJ_HOME/lib</em>.
+	 * We refer you to 
+	 * <a href="http://mpj-express.org/">the MPJ Express website</a> for
+	 * downloads and documentation about this library.   
+	 */
+	public static final String MPI_IMPL_MPJNATIVE = "mpj-native";
 	
 	/** Default setting for {@link #MPI_IMPL} : {@value #MPI_IMPL_DEFAULT} */
 	public static final String MPI_IMPL_DEFAULT = MPI_IMPL_MPJMULTICORE;
