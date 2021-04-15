@@ -63,5 +63,5 @@ you should be able to use this project to run tests.
 
 # These projects use *mpi-junit* to run their tests
 
-+ [Handist Collections](https://handist.github.io/handistCollections/) a distributed
++ [Handist Collections](https://handist.github.io/collections/) a distributed
 collection library
