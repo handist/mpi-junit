@@ -16,7 +16,7 @@ public class MyTestClass {
 ```
 
 In normal Junit test execution, the test methods are only run once. With the
-`MpiRunner however`, each mpi process execute the test methods. You will therefore
+`MpiRunner` however, each mpi process execute the test methods. You will therefore
 obtain as many test results as there are ranks for each of your test methods.
 
 # Releases / Documentation
@@ -24,6 +24,7 @@ obtain as many test results as there are ranks for each of your test methods.
 |Version|Changes|
 |-|-|
 | master-latest | Development head<br>[(Javadoc)](master-latest/apidocs/index.html)<br>[(Maven Report)](master-latest/index.html) |
+| v1.2.2 | Released June 22nd 2021<br>Added support for Parameterized MPI tests<br>[(Javadoc)](v1.2.2/apidocs/index.html)<br>[(Maven Report)](v1.2.2/index.html)<br>[(Download mpi-junit-v1.2.2.jar)](https://github.com/handist/mpi-junit/releases/download/v1.2.2/mpi-junit-v1.2.2.jar) |
 | v1.2.1 | Released March 26th 2021<br>Added support for MPJ-native environment<br>Added the option to parse only the results produced by a single host of the computation<br>[(Javadoc)](v1.2.1/apidocs/index.html)<br>[(Maven Report)](v1.2.1/index.html)<br>[(Download mpi-junit-v1.2.1.jar)](https://github.com/handist/mpi-junit/releases/download/v1.2.1/mpi-junit-v1.2.1.jar) |
 | v1.2 | Released July 6th 2020<br>Added support for MPJ-multicore environment as well as a number of useful customization options<br>[(Javadoc)](v1.2/apidocs/index.html)<br>[(Maven Report)](v1.2/index.html)<br>[(Download mpi-junit-1.2.jar)](https://github.com/handist/mpi-junit/releases/download/v1.2/mpi-junit-1.2.jar) |
 | v1.0 | Original release limited to mpiJava v1.2.7 native Mpi bindings. Use is not recommended due to issues in the project configuration. |
