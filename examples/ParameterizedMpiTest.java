@@ -11,22 +11,26 @@
  ******************************************************************************/
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized.Parameters;
 
-import handist.mpijunit.MpiConfig;
-import handist.mpijunit.MpiRunner;
+import handist.mpijunit.ParameterizedMpi;
+import handist.mpijunit.ParameterizedMpi.ParameterizedMpiConfig;
 import mpi.MPI;
 
 /**
  * Test class that demonstrates how the tests are run and how the Junit
  * assertions / failure behave in case they fail.
  */
-@RunWith(MpiRunner.class)
-@MpiConfig(ranks = 4)
-public class TestMpiEnvironment {
+@RunWith(ParameterizedMpi.class)
+@ParameterizedMpiConfig(ranks = 4)
+public class ParameterizedMpiTest {
 
 	static int rank = -1;
 	static int size = -1;
@@ -35,6 +39,14 @@ public class TestMpiEnvironment {
 	public static void beforeClass() throws Exception {
 		rank = MPI.COMM_WORLD.Rank();
 		size = MPI.COMM_WORLD.Size();
+	}
+
+	@Parameters(name = "{0}")
+	public static List<Object[]> parameter() {
+		return Arrays.asList(new Object[][] { { "a" }, { "b" }, { "c" }, { "d" } });
+	}
+
+	public ParameterizedMpiTest(String s) {
 	}
 
 	@Test

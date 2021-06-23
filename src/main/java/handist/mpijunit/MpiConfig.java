@@ -16,6 +16,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Annotation used to set some environment settings for test classes that use
@@ -54,4 +55,24 @@ public @interface MpiConfig {
 	 * @return number of MPI processes to be launched
 	 */
 	int ranks();
+
+	/**
+	 * Timeout after which the spawned MPI process will be killed. The default time
+	 * unit is the second. This can be changed by also indicating
+	 * {@link #timeUnit()}. By default returns {@value 0l} disabling the timeout
+	 * feature. Users should be careful to allocate enough time for all their tests
+	 * to run. This is only meant to kill a process which has trouble terminating
+	 * 
+	 * @return the timeout after which the spawned MPI process should be killed.
+	 */
+	long timeout() default 0l;
+
+	/**
+	 * Unit used to describe the timeout of {@link #timeout()}. By default is
+	 * {@link TimeUnit#SECONDS}. Setting this parameter without setting
+	 * {@link #timeout()} has no effect.
+	 * 
+	 * @return
+	 */
+	TimeUnit timeUnit() default TimeUnit.SECONDS;
 }

@@ -10,11 +10,18 @@
  ******************************************************************************/
 package handist.mpijunit;
 
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.lang.ProcessBuilder.Redirect;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +32,8 @@ import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
 
 /**
@@ -40,14 +48,95 @@ import org.junit.runners.model.InitializationError;
  * aggregates the test results before transmitting them to the normal Junit4
  * notification mechanism.
  * <p>
- * General configuration options for the {@link MpiRunner} can be found in
- * {@link Configuration}. For configuration specific to individual test classes,
- * refer to the {@link MpiConfig} annotation.
+ * General configuration options for the {@link ParameterizedMpi} can be found
+ * in {@link Configuration}. For configuration specific to individual test
+ * classes, refer to the {@link MpiConfig} annotation.
  * 
  * @author Patrick Finnerty
  *
  */
-public class MpiRunner extends Runner {
+public class ParameterizedMpi extends Runner {
+
+	/**
+	 * Annotation used to set some environment settings for test classes that use
+	 * the {@link ParameterizedMpi} runner. At a minimum, test classes have to
+	 * specify how many processes are desired for the test. You can also specify a
+	 * specific launcher if you need some specific setup or initialization that
+	 * involves multiple hosts before launching the tests.
+	 *
+	 * @author Patrick Finnerty
+	 *
+	 */
+	@Documented
+	@Retention(RUNTIME)
+	@Target(TYPE)
+	public @interface ParameterizedMpiConfig {
+		/**
+		 * Indicates which launcher should be used. The launcher is the class whose main
+		 * method is responsible for launching the tests in each MPI process. By
+		 * default, class {@link ParameterizedMpiTestLauncher} is used.
+		 * <p>
+		 * Using a different class than the default may be useful if you have some
+		 * specific setup to do before launching the Junit tests runtime. One such
+		 * specific launcher we provide in this library is the
+		 * {@link MpiApgasTestLauncher} which sets up the APGAS runtime before launching
+		 * the tests.
+		 * <p>
+		 * Of course you can also use your own custom launcher. If you choose to do so,
+		 * make sure that your implementation takes the same arguments as the
+		 * implementations we provide and creates notification files with the same name.
+		 *
+		 * @return the class whose main will be launched by all the parallel processes
+		 */
+		Class<?> launcher() default ParameterizedMpiTestLauncher.class;
+
+		/**
+		 * Indicates how many ranks (parallel processes) are desired to run the test
+		 * class. There are no default value for this setting and it needs to be set by
+		 * the user.
+		 * 
+		 * @return number of MPI processes to be launched
+		 */
+		int ranks();
+
+		/**
+		 * Timeout after which the spawned MPI process will be killed. The default time
+		 * unit is the second. This can be changed by also indicating
+		 * {@link #timeUnit()}. By default returns {@value 0l} disabling the timeout
+		 * feature. Users should be careful to allocate enough time for all their tests
+		 * to run. This is only meant to kill a process which has trouble terminating
+		 * 
+		 * @return the timeout after which the spawned MPI process should be killed.
+		 */
+		long timeout() default 0l;
+
+		/**
+		 * Unit used to describe the timeout of {@link #timeout()}. By default is
+		 * {@link TimeUnit#SECONDS}. Setting this parameter without setting
+		 * {@link #timeout()} has no effect.
+		 * 
+		 * @return
+		 */
+		TimeUnit timeUnit() default TimeUnit.SECONDS;
+	}
+
+	/** Field describing the private Field "runners" of class {@link Suite} */
+	private static final Field runnersField;
+
+	static {
+		Field runnersFieldOfClassSuite;
+		try {
+			runnersFieldOfClassSuite = Suite.class.getDeclaredField("runners");
+			runnersFieldOfClassSuite.setAccessible(true);
+			runnersField = runnersFieldOfClassSuite;
+		} catch (NoSuchFieldException | SecurityException e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+	}
+
+	/** Successive parameterized configurations to test */
+	final List<Runner> configurations;
 
 	/** Class used as the main class for the child MPI processes */
 	String launcherClass;
@@ -57,14 +146,14 @@ public class MpiRunner extends Runner {
 
 	/** Number of ranks desired */
 	int processCount;
-
 	/** Class under test */
-	Class<?> testClass;
-
-	/** Timeout after which the spawned MPI process will be killed */
+	final Class<?> testClass;
+	/**
+	 * Timeout after which the spawned process should be killed. Is disabled if the
+	 * value is negative or null.
+	 */
 	long timeout;
-
-	/** Time unit of the {@link #timeout} */
+	/** Time unit for {@link #timeout} */
 	TimeUnit timeUnit;
 
 	/**
@@ -75,14 +164,22 @@ public class MpiRunner extends Runner {
 	 *                             MpiRunner, i.e. if it does not have a
 	 *                             {@link MpiConfig} annotation for instance
 	 */
-	public MpiRunner(Class<?> klass) throws InitializationError {
+	@SuppressWarnings("unchecked")
+	public ParameterizedMpi(Class<?> klass) throws InitializationError {
 		super();
 		testClass = klass;
-		final MpiConfig[] configs = testClass.getAnnotationsByType(MpiConfig.class);
+		final ParameterizedMpiConfig[] configs = testClass.getAnnotationsByType(ParameterizedMpiConfig.class);
 		if (configs.length > 0) {
 			setupConfiguration(configs[0]);
 		} else {
-			throw new InitializationError("The test class " + testClass + " is missing a @MpiConfig annotation.");
+			throw new InitializationError(
+					"The test class " + testClass + " is missing a @ParameterizedMpiConfig annotation.");
+		}
+		try {
+			Parameterized parameterizedRunner = new Parameterized(klass);
+			configurations = (List<Runner>) runnersField.get(parameterizedRunner);
+		} catch (Throwable t) {
+			throw new InitializationError(t);
 		}
 	}
 
@@ -90,7 +187,7 @@ public class MpiRunner extends Runner {
 	 * Creates a tree description of the tests to run. As per normal Junit tests, a
 	 * branch is created for each test method in the test class. Usually, these
 	 * "test" descriptions are the leaves of the test class description. However
-	 * with the {@link MpiRunner}, we add a description to each test method
+	 * with the {@link ParameterizedMpi}, we add a description to each test method
 	 * description for each mpi process. This groups the results from each mpi
 	 * process by test methods.
 	 */
@@ -98,27 +195,30 @@ public class MpiRunner extends Runner {
 	public Description getDescription() {
 		if (System.getProperty(Configuration.PARSE_NOTIFICATIONS) != null) {
 			try {
-				return new BlockJUnit4ClassRunner(testClass).getDescription();
-			} catch (final InitializationError e) {
+				return new Parameterized(testClass).getDescription();
+			} catch (final Throwable e) {
 				e.printStackTrace();
 			}
 			return null;
 		} else {
 			final Description toReturn = Description.createSuiteDescription(testClass);
 
-			for (final Method m : testClass.getMethods()) {
-				if (m.isAnnotationPresent(Test.class)) {
-					// Each method is now a "suite" since it will contain one result per rank
-					final Description methodDescription = Description.createSuiteDescription(m.getName());
-					for (int i = 0; i < processCount; i++) {
-						// Description leaf, corresponds to the result of method "m" on rank "i".
-						final Description leafDescription = Description.createTestDescription(testClass,
-								"[" + i + "] " + m.getName());
-						methodDescription.addChild(leafDescription);
+			for (Runner r : configurations) {
+				Description parameterDescription = Description.createSuiteDescription(r.getDescription().toString());
 
+				for (final Method m : testClass.getMethods()) {
+					if (m.isAnnotationPresent(Test.class)) {
+						final Description methodDescription = Description.createSuiteDescription(m.getName());
+						for (int i = 0; i < processCount; i++) {
+							final Description leafDescription = Description.createTestDescription(testClass,
+									"[" + i + "] " + m.getName());
+							methodDescription.addChild(leafDescription);
+						}
+						parameterDescription.addChild(methodDescription);
 					}
-					toReturn.addChild(methodDescription);
 				}
+
+				toReturn.addChild(parameterDescription);
 			}
 
 			return toReturn;
@@ -129,14 +229,16 @@ public class MpiRunner extends Runner {
 	 * Attempts to open the file that should have been created by the
 	 * {@link ToFileRunNotifier} of the specified rank.
 	 * 
-	 * @param rank the integer indicating the process whose notifications need to be
-	 *             retrieved
+	 * @param rank   the integer indicating the process whose notifications need to
+	 *               be retrieved
+	 * @param config the index of the parameter whose test result needs to be
+	 *               retrived
 	 * @return an {@link ArrayList} containing the {@link Notification} that were
 	 *         made by the target rank during the test execution
 	 */
 	@SuppressWarnings("unchecked")
-	private ArrayList<Notification> getNotifications(int rank) throws Exception {
-		final String notificationFileName = testClass.getCanonicalName() + "_" + rank;
+	private ArrayList<Notification> getNotifications(int rank, int config) throws Exception {
+		final String notificationFileName = testClass.getCanonicalName() + "_" + config + "_" + rank;
 		final File toOpen = new File(pathToNotifications, notificationFileName);
 
 		final boolean keepFile = Boolean.parseBoolean(
@@ -153,9 +255,10 @@ public class MpiRunner extends Runner {
 	/**
 	 * Builds the command and launches a process that will run the test class.
 	 *
+	 * @param i the index of the configuration to launch
 	 * @throws Exception if an exception occurs when launching the process
 	 */
-	private void launchMpiProcess() throws Exception {
+	private void launchMpiProcess(int i) throws Exception {
 		final ArrayList<String> command = new ArrayList<>();
 
 		final String mpiImplementation = System.getProperty(Configuration.MPI_IMPL, Configuration.MPI_IMPL_DEFAULT);
@@ -273,7 +376,13 @@ public class MpiRunner extends Runner {
 			command.add("native");
 		}
 
+		// First argument to MPI process main: the class under test
 		command.add(testClass.getCanonicalName());
+		// Second argument to MPI process main: the index of the @Parameter to run
+		command.add(Integer.toString(i));
+
+		// Third and optional argument to the MPI process main: directory in which
+		// to place the notification file
 		pathToNotifications = System.getProperty(Configuration.NOTIFICATIONS_PATH);
 		if (pathToNotifications != null) {
 			new File(pathToNotifications).mkdirs();
@@ -312,8 +421,9 @@ public class MpiRunner extends Runner {
 	 *
 	 * @param notifier the notifier to which the test results need to be reported
 	 * @param e        the exception that caused the issue
+	 * @param i        the index of the configuration for which a problem occurred
 	 */
-	private void notificationsForRuntimeProblem(RunNotifier notifier, Exception e) {
+	private void notificationsForRuntimeProblem(RunNotifier notifier, Exception e, int i) {
 		final String action = System.getProperty(Configuration.ACTION_ON_ERROR, Configuration.ACTION_ON_ERROR_DEFAULT);
 		if (action.equals(Configuration.ON_ERROR_SILENT)) {
 			return;
@@ -321,10 +431,12 @@ public class MpiRunner extends Runner {
 
 		final Exception failureCause = new Exception("Unable to produce results for this test");
 		failureCause.initCause(e);
-		notifier.fireTestSuiteStarted(getDescription());
+		notifier.fireTestSuiteStarted(configurations.get(i).getDescription());
 		for (final Method m : testClass.getMethods()) {
 			if (m.isAnnotationPresent(Test.class)) {
-				final Description testDescription = Description.createTestDescription(testClass, m.getName());
+				final Description testDescription = Description.createTestDescription(testClass.getName(),
+						m.getName() + configurations.get(i).getDescription().getDisplayName()); // Description.createTestDescription(testClass,
+																								// m.getName());
 
 				switch (action) {
 				case Configuration.ON_ERROR_ERROR:
@@ -340,7 +452,7 @@ public class MpiRunner extends Runner {
 
 			}
 		}
-		notifier.fireTestSuiteFinished(getDescription());
+		notifier.fireTestSuiteFinished(configurations.get(i).getDescription());
 	}
 
 	/**
@@ -349,11 +461,11 @@ public class MpiRunner extends Runner {
 	 * 
 	 * @param notifier the notifier to which the aggregated test results need to be
 	 *                 transmitted
+	 * @param config   the index of the configuration considered for parsing
 	 */
-	private void parseTestResults(RunNotifier notifier) throws Exception {
+	private void parseTestResults(RunNotifier notifier, int config) throws Exception {
 		// Obtain the notifications of every process
-		// If the mpirunner.parseNotifications was defined, restrict to the
-		// given rank
+		// If the mpirunner.parseNotifications was defined, restrict to the given rank
 		final List<List<Notification>> processesNotifications = new ArrayList<>(processCount);
 		int firstRankToProcess = 0;
 		int lastRankToProcess = processCount - 1;
@@ -366,18 +478,10 @@ public class MpiRunner extends Runner {
 		}
 
 		for (int i = firstRankToProcess; i <= lastRankToProcess; i++) {
-			processesNotifications.add(i, getNotifications(i));
+			processesNotifications.add(i, getNotifications(i, config));
 		}
 
 		// Process the notifications of each list in FIFO order
-
-		// The first notification on each host should be a TestSuiteStarted
-		// We can pop it and put our own TestSuiteDescription instead
-		for (final List<Notification> l : processesNotifications) {
-			l.remove(0);
-			l.remove(l.size() - 1);
-		}
-
 		for (int i = firstRankToProcess; i <= lastRankToProcess; i++) {
 			final List<Notification> processNotifications = processesNotifications.get(i);
 
@@ -427,21 +531,22 @@ public class MpiRunner extends Runner {
 		if (isDryRun) {
 			// Override the value KEEP_NOTIFICATIONS to keep the notifications files
 			System.setProperty(Configuration.KEEP_NOTIFICATIONS, "true");
-		} else {
-			// Launch the mpirun process for the test class
-			try {
-				launchMpiProcess();
-			} catch (final Exception e) {
-				notificationsForRuntimeProblem(notifier, e);
-				return;
-			}
 		}
 
-		try {
-			parseTestResults(notifier);
-		} catch (final Exception e) {
-			// Something went wrong during the parsing
-			notificationsForRuntimeProblem(notifier, e);
+		// for each configuration (we use the int index to designate a configuration)
+		for (int i = 0; i < configurations.size(); i++) {
+
+			try {
+				if (!isDryRun) {
+					// Launch the mpirun process for the test class
+					launchMpiProcess(i);
+				}
+
+				parseTestResults(notifier, i);
+			} catch (final Exception e) {
+				// Something went wrong during the parsing
+				notificationsForRuntimeProblem(notifier, e, i);
+			}
 		}
 	}
 
@@ -451,7 +556,7 @@ public class MpiRunner extends Runner {
 	 *
 	 * @param cfg configuration to use to run the tests (provided by the test class)
 	 */
-	private void setupConfiguration(MpiConfig cfg) {
+	private void setupConfiguration(ParameterizedMpiConfig cfg) {
 		processCount = cfg.ranks();
 		launcherClass = cfg.launcher().getCanonicalName();
 		timeout = cfg.timeout();

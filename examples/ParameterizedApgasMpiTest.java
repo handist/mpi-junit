@@ -11,14 +11,19 @@
  ******************************************************************************/
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized.Parameters;
 
 import apgas.Constructs;
 import apgas.MultipleException;
-import handist.mpijunit.MpiApgasTestLauncher;
-import handist.mpijunit.MpiConfig;
-import handist.mpijunit.MpiRunner;
+import handist.mpijunit.ParameterizedMpi;
+import handist.mpijunit.ParameterizedMpi.ParameterizedMpiConfig;
+import handist.mpijunit.ParameterizedMpiApgasTestLauncher;
 
 import static apgas.Constructs.*;
 
@@ -30,9 +35,22 @@ import static apgas.Constructs.*;
  * (MpiApgasTestLauncher.class). This launcher will initialize both the APGAS
  * and the MPI environment before launching the tests.
  */
-@RunWith(MpiRunner.class)
-@MpiConfig(ranks = 2, launcher = MpiApgasTestLauncher.class)
-public class TestApgasEnvironment {
+@RunWith(ParameterizedMpi.class)
+@ParameterizedMpiConfig(ranks = 2, launcher = ParameterizedMpiApgasTestLauncher.class)
+public class ParameterizedApgasMpiTest {
+
+	@Parameters(name = "{0}")
+	public static List<Object[]> parameter() {
+		return Arrays.asList(new Object[][] { { "First parameter" }, { "Second parameter" }, });
+	}
+
+	public ParameterizedApgasMpiTest(String s) {
+	}
+
+	@Ignore
+	@Test
+	public void ignoredTest() {
+	}
 
 	/**
 	 * Checks that the test is indeed run with multiple APGAS places

@@ -43,23 +43,7 @@ public class Configuration {
 	 * </ul>
 	 */
 	public static final String ACTION_ON_ERROR = "mpirunner.actionOnError";
-	/**
-	 * Possible setting for {@link #ACTION_ON_ERROR}, shows tests as "Error"
-	 */
-	public static final String ON_ERROR_ERROR = "error";
-	/**
-	 * Possible setting for {@link #ACTION_ON_ERROR}, does not show any result
-	 */
-	public static final String ON_ERROR_SILENT = "silent";
-	/**
-	 * Possible setting for {@link #ACTION_ON_ERROR}, shows tests as "Skipped"
-	 */
-	public static final String ON_ERROR_SKIP = "skip";
-	/**
-	 * Default action for {@link #ACTION_ON_ERROR}, is {@link #ON_ERROR_ERROR}
-	 */
-	public static final String ACTION_ON_ERROR_DEFAULT = ON_ERROR_ERROR;
-
+	
 	/**
 	 * Command line option to choose whether the <em>mpirun</em> process should
 	 * actually be launched. Can be set by the JVM argument
@@ -79,7 +63,6 @@ public class Configuration {
 	public static final String DRY_RUN = "mpirunner.dryRun";
 	/** Default setting for {@link #DRY_RUN} */
 	public static final String DRY_RUN_DEFAULT = "false";
-
 	/**
 	 * Command line option used to define the <em>-Djava.library.path</em> option of
 	 * the mpi process launched by the {@link MpiRunner}. Set it by defining
@@ -91,6 +74,27 @@ public class Configuration {
 	 * almost certainly need to specify this option.
 	 */
 	public static final String JAVA_LIBRARY_PATH = "mpirunner.javaLibraryPath";
+
+	/**
+	 * Command line option used to choose whether the files containing the
+	 * {@link Notification}s that are made to the RunNotifier in each of the MPI
+	 * processes should be kept after the tests' execution. Set it by defining
+	 * <em>-Dmpirunner.keepNotifications=true/false</em>. This option is set to
+	 * <code>false</code> by default, meaning the notification files will deleted
+	 * after they are parsed by the {@link MpiRunner}.
+	 * <p>
+	 * This can be useful if you want to parse the results on a different system
+	 * then the one they were executed on. For instance, you may find it convenient
+	 * to run your tests on a server with this option set to <code>true</code>,
+	 * download the notification recordings and parse the results on your personal
+	 * machine using the {@link #DRY_RUN} option.
+	 */
+	public static final String KEEP_NOTIFICATIONS = "mpirunner.keepNotifications";
+	/**
+	 * Default setting for {@link #KEEP_NOTIFICATIONS}, is
+	 * {@value #KEEP_NOTIFICATIONS_DEFAULT} .
+	 */
+	public static final String KEEP_NOTIFICATIONS_DEFAULT = "false";
 
 	/**
 	 * Command line option to define the MPI implementation used to launch the mpi
@@ -110,15 +114,6 @@ public class Configuration {
 	 * {@value #MPIRUN_OPTION} to specify options to the <em>mpirun</em> command.
 	 */
 	public static final String MPI_IMPL = "mpirunner.mpiImpl";
-
-	/**
-	 * Possible option for the MPI implementation used to launch the tests. When
-	 * using the <em>native</em> implementation, be mindful of the fact you will
-	 * need to provide the path to the shared objects bindings to the MPI library
-	 * you are using with {@link #JAVA_LIBRARY_PATH}. You can also give additional
-	 * arguments to the <em>mpirun</em> command by setting {@link #MPIRUN_OPTION}.
-	 */
-	public static final String MPI_IMPL_NATIVE = "native";
 
 	/**
 	 * Possible option for the MPI implementation used to launch the tests.
@@ -142,6 +137,15 @@ public class Configuration {
 	 */
 	public static final String MPI_IMPL_MPJNATIVE = "mpj-native";
 
+	/**
+	 * Possible option for the MPI implementation used to launch the tests. When
+	 * using the <em>native</em> implementation, be mindful of the fact you will
+	 * need to provide the path to the shared objects bindings to the MPI library
+	 * you are using with {@link #JAVA_LIBRARY_PATH}. You can also give additional
+	 * arguments to the <em>mpirun</em> command by setting {@link #MPIRUN_OPTION}.
+	 */
+	public static final String MPI_IMPL_NATIVE = "native";
+	
 	/** Default setting for {@link #MPI_IMPL} : {@value #MPI_IMPL_DEFAULT} */
 	public static final String MPI_IMPL_DEFAULT = MPI_IMPL_MPJMULTICORE;
 
@@ -172,25 +176,23 @@ public class Configuration {
 	public static final String NOTIFICATIONS_PATH = "mpirunner.notificationsPath";
 
 	/**
-	 * Command line option used to choose whether the files containing the
-	 * {@link Notification}s that are made to the RunNotifier in each of the MPI
-	 * processes should be kept after the tests' execution. Set it by defining
-	 * <em>-Dmpirunner.keepNotifications=true/false</em>. This option is set to
-	 * <code>false</code> by default, meaning the notification files will deleted
-	 * after they are parsed by the {@link MpiRunner}.
-	 * <p>
-	 * This can be useful if you want to parse the results on a different system
-	 * then the one they were executed on. For instance, you may find it convenient
-	 * to run your tests on a server with this option set to <code>true</code>,
-	 * download the notification recordings and parse the results on your personal
-	 * machine using the {@link #DRY_RUN} option.
+	 * Possible setting for {@link #ACTION_ON_ERROR}, shows tests as "Error"
 	 */
-	public static final String KEEP_NOTIFICATIONS = "mpirunner.keepNotifications";
+	public static final String ON_ERROR_ERROR = "error";
+
 	/**
-	 * Default setting for {@link #KEEP_NOTIFICATIONS}, is
-	 * {@value #KEEP_NOTIFICATIONS_DEFAULT} .
+	 * Possible setting for {@link #ACTION_ON_ERROR}, does not show any result
 	 */
-	public static final String KEEP_NOTIFICATIONS_DEFAULT = "false";
+	public static final String ON_ERROR_SILENT = "silent";
+	/**
+	 * Possible setting for {@link #ACTION_ON_ERROR}, shows tests as "Skipped"
+	 */
+	public static final String ON_ERROR_SKIP = "skip";
+	
+	/**
+	 * Default action for {@link #ACTION_ON_ERROR}, is {@link #ON_ERROR_ERROR}
+	 */
+	public static final String ACTION_ON_ERROR_DEFAULT = ON_ERROR_ERROR;
 
 	/**
 	 * Option used to parse only the results of a single rank. By default, the test
