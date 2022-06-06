@@ -166,6 +166,7 @@ public class MpiRunner extends Runner {
 
 		// Depending on the implementation, build a different command
 		switch (mpiImplementation) {
+		case Configuration.MPI_IMPL_OPENMPI:
 		case Configuration.MPI_IMPL_NATIVE:
 			command.add("mpirun");
 			if (mpirunOptions != null) {

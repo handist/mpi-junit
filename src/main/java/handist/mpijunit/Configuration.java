@@ -146,6 +146,13 @@ public class Configuration {
 	 */
 	public static final String MPI_IMPL_NATIVE = "native";
 	
+	/**
+	 * Possible option for the MPI implementation used to launch the tests. When 
+	 * using the <em>openmpi</em> implementation, make sure you have compiled 
+	 * OpenMPI with the Java bindings.
+	 */
+	public static final String MPI_IMPL_OPENMPI = "openmpi";
+	
 	/** Default setting for {@link #MPI_IMPL} : {@value #MPI_IMPL_DEFAULT} */
 	public static final String MPI_IMPL_DEFAULT = MPI_IMPL_MPJMULTICORE;
 
