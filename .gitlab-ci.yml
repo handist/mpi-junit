@@ -15,7 +15,8 @@ cache:
 project_compile:
   stage: build
   script:
-    - mvn $MAVEN_CLI_OPTS clean package
+    - source ~/.bashrc
+    - mvn $MAVEN_CLI_OPTS -DskipTests clean package
     
 javadoc:
   stage: report
